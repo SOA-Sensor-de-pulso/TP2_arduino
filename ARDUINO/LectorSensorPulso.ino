@@ -56,9 +56,9 @@ const int BUZZER_PIN = 2;
 // cadena de caracteres que va a contener el valor del sensor de pulso
 const int BTH_RX_PIN = 8;
 const int BTH_TX_PIN = 9;
+const int BASE = 10;
 bool esta_encendido_bth;
 char buffer_bth[5]; //4 digitos + \0
-
 // Para el botón: pin al que se conecta, y estado
 const int PIN_BOTON = 3;
 volatile bool esta_encendido;
@@ -305,7 +305,7 @@ void none()
 //---------------------------------------------------------
 
 void enviarBluetooth(){
-  buffer_bth = itoa(valor_pulso_actual);
+  itoa(valor_pulso_actual, buffer_bth, BASE);
   
   int i = 0;
   while(buffer_bth[i]) {

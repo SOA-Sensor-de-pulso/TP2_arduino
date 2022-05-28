@@ -37,7 +37,7 @@
 #define TIMEOUT_THRESHOLD 100
 #define FREQUENCY 400
 #define SERIAL_BAUDS 9600
-#define MILLISECONDS_THROTTLE 50
+#define MILLISECONDS_THROTTLE 1000
 #define LED_APAGADO 255
 #define LED_ENCENDIDO 0
 
@@ -54,11 +54,11 @@ const int BUZZER_PIN = 2;
 // pines de transmision y recepcion
 // variable para comando BOTON_PRESIONADO
 // cadena de caracteres que va a contener el valor del sensor de pulso
-const int BTH_RX_PIN = 8;
-const int BTH_TX_PIN = 9;
+const int BTH_RX_PIN = 10;
+const int BTH_TX_PIN = 11;
 const int BASE = 10;
 bool esta_encendido_bth;
-char buffer_bth[5]; //4 digitos + \0
+char buffer_bth[6]; //4 digitos + \0
 // Para el botón: pin al que se conecta, y estado
 const int PIN_BOTON = 3;
 volatile bool esta_encendido;
@@ -101,7 +101,7 @@ const int MAX_ANALOG_VALUE = 1023;
 Inicializacion de softwareSerial para sensor bluetooth
 */
 SoftwareSerial sensorBluetooth = SoftwareSerial(BTH_RX_PIN,BTH_TX_PIN);
-enum comandos_bth = {BOTON_PRESIONADO} comandos_bth;
+enum comandos_bth {BOTON_PRESIONADO} comando_bth;
 
 //---------------------------------------------------------
 
@@ -306,31 +306,34 @@ void none()
 
 void enviarBluetooth(){
   itoa(valor_pulso_actual, buffer_bth, BASE);
-  
-  int i = 0;
-  while(buffer_bth[i]) {
-    sensorBluetooth.write(buffer_bth[i]);
-    i++;
-  }
+
+  int largo = strlen(buffer_bth);
+  buffer_bth[largo] = '\n';
+  buffer_bth[largo+1] = '\0';
+
+  Serial.print("largo: ");
+  Serial.println(largo);
+  Serial.print("valor: ");
+  Serial.println(buffer_bth);
+  Serial.println(sensorBluetooth.write(buffer_bth));
+  //sensorBluetooth.flush();
+  //Serial.println(sensorBluetooth.write('\n'));
 }
 
 //---------------------------------------------------------
 
 bool verificar_estado_sensor_bluetooth() {
-  
+
   if(sensorBluetooth.available()) {
-    comando_bth = atoi(sensorBluetooth.read());
+    char c = sensorBluetooth.read();
+    while(sensorBluetooth.available()) {
+      sensorBluetooth.read();
+    }
+    comando_bth = c - '0';
 
     switch(comando_bth) {
       case BOTON_PRESIONADO:
-        esta_encendido_bth = !esta_encendido_bth;
-        if(esta_encendido_bth) {
-            new_event = ACTIVAR;
-        }
-        else{
-            new_event = DESACTIVAR;
-        }
-        return true;
+        presionar_boton();
     }
   }
   
@@ -410,7 +413,7 @@ se encarga de evaluar los diferentes sensores para obtener un evento
 void get_new_event()
 {
 
-  if(verificar_estado_sensor_boton() || verificar_alarma() || verificar_estado_sensor_pulso()) {
+  if(verificar_estado_sensor_bluetooth() || verificar_estado_sensor_boton() || verificar_alarma() || verificar_estado_sensor_pulso()) {
     return;
   }
 }
@@ -430,7 +433,6 @@ void setup()
   Serial.begin(SERIAL_BAUDS);
   sensorBluetooth.begin(SERIAL_BAUDS);
   esta_encendido_bth = false;
-  estaba_encendido_bth = false;
 
   esta_encendido = false;
   estaba_encendido = false;

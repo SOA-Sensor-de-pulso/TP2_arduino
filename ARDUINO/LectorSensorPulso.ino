@@ -1,3 +1,5 @@
+#include <SoftwareSerial.h>
+
 // Habilitacion de debug para la impresion por el puerto serial ...
 //----------------------------------------------
 #define SERIAL_DEBUG_ENABLED 1
@@ -48,6 +50,15 @@ const int LED_GREEN_PIN = 7;
 
 const int BUZZER_PIN = 2;
 
+// Para bluetooth: 
+// pines de transmision y recepcion
+// variable para comando BOTON_PRESIONADO
+// cadena de caracteres que va a contener el valor del sensor de pulso
+const int BTH_RX_PIN = 8;
+const int BTH_TX_PIN = 9;
+bool esta_encendido_bth;
+char buffer_bth[5]; //4 digitos + \0
+
 // Para el botón: pin al que se conecta, y estado
 const int PIN_BOTON = 3;
 volatile bool esta_encendido;
@@ -57,7 +68,7 @@ int valor_pulso_anterior;
 bool alarma;
 
 const int POTENCIOMETER = 1;
-
+int valor_pulso_actual;
 // El rango normal de pulsaciones de un corazon en reposo
 const int MIN_HEALTH_PPM = 60;
 const int MAX_HEALTH_PPM = 100;
@@ -84,6 +95,14 @@ const int MAX_TEST_PPM = 250;
 // Rango para mapeo de valores potenciometro
 const int MIN_ANALOG_VALUE = 0;
 const int MAX_ANALOG_VALUE = 1023;
+//---------------------------------------------------------
+
+/*
+Inicializacion de softwareSerial para sensor bluetooth
+*/
+SoftwareSerial sensorBluetooth = SoftwareSerial(BTH_RX_PIN,BTH_TX_PIN);
+enum comandos_bth = {BOTON_PRESIONADO} comandos_bth;
+
 //---------------------------------------------------------
 
 /*
@@ -224,6 +243,7 @@ void pulso_normal()
   turnOnGreenLED();
   noTone(BUZZER_PIN);
 
+  enviarBluetooth();
   current_state = LECTURA_NORMAL;
 }
 
@@ -235,6 +255,7 @@ void pulso_precaucion()
   turnOnYellowLED();
   noTone(BUZZER_PIN);
 
+  enviarBluetooth();
   alarma = true;
   current_state = ALARMA;
 }
@@ -247,6 +268,7 @@ void pulso_peligroso()
   turnOnRedLED();
   tone(BUZZER_PIN, FREQUENCY);
   
+  enviarBluetooth();
   alarma = true;
   current_state = ALARMA;
 }
@@ -259,6 +281,7 @@ void pulso_incorrecto()
   turnOnBlueLED();
   tone(BUZZER_PIN, FREQUENCY);
   
+  enviarBluetooth();
   alarma = true;
   current_state = ALARMA;
 }
@@ -281,7 +304,39 @@ void none()
 
 //---------------------------------------------------------
 
+void enviarBluetooth(){
+  buffer_bth = itoa(valor_pulso_actual);
+  
+  int i = 0;
+  while(buffer_bth[i]) {
+    sensorBluetooth.write(buffer_bth[i]);
+    i++;
+  }
+}
+
 //---------------------------------------------------------
+
+bool verificar_estado_sensor_bluetooth() {
+  
+  if(sensorBluetooth.available()) {
+    comando_bth = atoi(sensorBluetooth.read());
+
+    switch(comando_bth) {
+      case BOTON_PRESIONADO:
+        esta_encendido_bth = !esta_encendido_bth;
+        if(esta_encendido_bth) {
+            new_event = ACTIVAR;
+        }
+        else{
+            new_event = DESACTIVAR;
+        }
+        return true;
+    }
+  }
+  
+
+  return false;
+}
 
 /*
 Se encarga de verificar el estado del boton.
@@ -313,7 +368,7 @@ se encarga de generar eventos en funcion del valor que se lea
 del sensor de pulsos
 */
 bool verificar_estado_sensor_pulso() {
-    int valor_pulso_actual = getHeartValue();
+    valor_pulso_actual = getHeartValue();
     // no alterar el orden de llamados de función sin revisar las 
     // definiciones de is(Warning|Healthy|Dangerous)Value
     if ( isHealthyValue(valor_pulso_actual) )
@@ -367,10 +422,15 @@ void setup()
   pinMode(LED_BLUE_PIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(PIN_BOTON, INPUT_PULLUP);
-  
+  pinMode(BTH_RX_PIN, INPUT);
+  pinMode(BTH_TX_PIN, OUTPUT);
+
   attachInterrupt(digitalPinToInterrupt(PIN_BOTON), presionar_boton, FALLING);
   
   Serial.begin(SERIAL_BAUDS);
+  sensorBluetooth.begin(SERIAL_BAUDS);
+  esta_encendido_bth = false;
+  estaba_encendido_bth = false;
 
   esta_encendido = false;
   estaba_encendido = false;

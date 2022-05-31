@@ -7,7 +7,7 @@ import java.util.List;
 
 public class BthModel {
     final private static List<String> commands = Collections.unmodifiableList(
-            Arrays.asList("encender")
+            Arrays.asList("encender", "apagar")
             );
 
     //poner toda la logica asociada al bluetooth

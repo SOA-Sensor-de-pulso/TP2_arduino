@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">tp2</string>
+    <string name="button_hint">Enviar comando bluetooth</string>
+    <string name="text_input_hint">Escriba un comando bluetooth</string>
+</resources>

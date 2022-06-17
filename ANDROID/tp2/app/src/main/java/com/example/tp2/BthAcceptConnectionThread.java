@@ -23,7 +23,7 @@ public class BthAcceptConnectionThread extends Thread {
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private Handler mainHandler;
 
-    public BthAcceptConnectionThread(BluetoothDevice device, ICallback callback, Looper mainLoop) {
+    public BthAcceptConnectionThread(BluetoothDevice device, ICallback callback) {
         BluetoothSocket tmp = null;
         try {
             tmp = device.createInsecureRfcommSocketToServiceRecord(myUUID);
@@ -32,7 +32,6 @@ public class BthAcceptConnectionThread extends Thread {
         }
         this.callback = callback;
         this.mmSocket = tmp;
-        this.mainHandler = new Handler(mainLoop);
     }
 
     public void run() {

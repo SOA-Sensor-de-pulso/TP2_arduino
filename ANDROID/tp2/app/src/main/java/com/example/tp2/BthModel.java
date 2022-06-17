@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.pm.PackageManager;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
@@ -64,15 +65,15 @@ public class BthModel implements ICallback {
             );
 
     //poner toda la logica asociada al bluetooth
-    public void getPulseSensorValue() {
+    public void getPulseSensorValue(String data) {
         //definir thread/asyncTask/Service para no bloquear activity principal
-        this.presenter.notifyValues("80");
+        this.presenter.notifyValues(data);
     }
 
     public void sendCommandToDevice(String command) {
         //definir thread/asyncTask/Service para no bloquear activity principal
         //this.bthHandleConnectionThread.write(intToByteArray(commands.indexOf(command)));
-        char commandNumber = (char) (((char)commands.indexOf(command)) + '0');
+        char commandNumber = (char) (commands.indexOf(command) + '0');
 
         byte[] info = {(byte)commandNumber,'\0'};
         this.bthHandleConnectionThread.write(info);
@@ -85,7 +86,12 @@ public class BthModel implements ICallback {
     }
 
     public void readCallback(byte[] readData){
-        this.getPulseSensorValue();
+        Log.i("app_arduino", "iniciando lectura");
+        for (byte value:readData) {
+            Log.i("app_arduino", String.valueOf(value-'0'));
+        }
+
+        this.getPulseSensorValue(new String(readData));
     }
 
     public static byte[] intToByteArray(int a)

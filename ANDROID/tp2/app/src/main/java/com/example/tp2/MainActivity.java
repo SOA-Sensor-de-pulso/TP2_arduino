@@ -106,9 +106,8 @@ public class MainActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                if (result.getResultCode() == Activity.RESULT_CANCELED) {
-                    checkBluetooth();
-                }
+                Intent intent = new Intent(this.getApplicationContext(),BluetoothDevicesActivity.class);
+                startActivity(intent);
             });
 
     private final BroadcastReceiver bthReceiver = new BroadcastReceiver() {

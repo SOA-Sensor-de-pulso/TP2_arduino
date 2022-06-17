@@ -17,7 +17,7 @@ public class Presenter {
     }
 
     public void notifyValues(String value) {
-        this.activity.setReadValues(value);
+        this.activity.runOnUiThread(() -> activity.setReadValues(value));
     }
 
     public void tryConnection() {

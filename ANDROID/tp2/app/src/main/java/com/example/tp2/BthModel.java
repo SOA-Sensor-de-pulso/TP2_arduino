@@ -31,6 +31,10 @@ public class BthModel implements ICallback {
     private BthAcceptConnectionThread bthConnectionThread;
     private BluetoothSocket socket;
     private BthHandleConnectionThread bthHandleConnectionThread;
+    final private static List<String> commands = Collections.unmodifiableList(
+            Arrays.asList("encender", "apagar")
+    );
+
 
     BthModel(String macAddress) {
         this.device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(macAddress);
@@ -49,14 +53,7 @@ public class BthModel implements ICallback {
         this.bthHandleConnectionThread.cancel();
     }
 
-
-    final private static List<String> commands = Collections.unmodifiableList(
-            Arrays.asList("encender", "apagar")
-            );
-
-    //poner toda la logica asociada al bluetooth
     public void getPulseSensorValue(String data) {
-        //definir thread/asyncTask/Service para no bloquear activity principal
         this.presenter.notifyValues(data);
     }
 
@@ -69,27 +66,17 @@ public class BthModel implements ICallback {
     }
 
     public void inititateCallback(BluetoothSocket bluetoothSocket){
+        this.presenter.notifyConnectionEstablished();
         this.bthHandleConnectionThread = new BthHandleConnectionThread(bluetoothSocket,this);
         this.bthHandleConnectionThread.start();
     }
 
     public void readCallback(byte[] readData){
         Log.i("app_arduino", "iniciando lectura");
-        for (byte value:readData) {
-            Log.i("app_arduino", String.valueOf(value-'0'));
+        for (byte value: readData) {
+            Log.i("app_arduino", String.valueOf(value -'0'));
         }
-
         this.getPulseSensorValue(new String(readData));
-    }
-
-    public static byte[] intToByteArray(int a)
-    {
-        byte[] ret = new byte[4];
-        ret[3] = (byte) (a & 0xFF);
-        ret[2] = (byte) ((a >> 8) & 0xFF);
-        ret[1] = (byte) ((a >> 16) & 0xFF);
-        ret[0] = (byte) ((a >> 24) & 0xFF);
-        return ret;
     }
 }
 

@@ -125,4 +125,8 @@ public class MainActivity extends AppCompatActivity {
     public void setReadValues(String value) {
         this.readValues.setText(value);
     }
+
+    public void showConnectionSuccess() {
+        Toast.makeText(this.getApplicationContext(),"Conexion establecida!",Toast.LENGTH_LONG).show();
+    }
 }

@@ -1,5 +1,7 @@
 package com.example.tp2;
 
+import android.widget.Toast;
+
 public class Presenter {
 
     private MainActivity activity;
@@ -18,6 +20,10 @@ public class Presenter {
 
     public void notifyValues(String value) {
         this.activity.runOnUiThread(() -> activity.setReadValues(value));
+    }
+
+    public void notifyConnectionEstablished() {
+        this.activity.runOnUiThread(() -> activity.showConnectionSuccess());
     }
 
     public void tryConnection() {

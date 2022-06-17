@@ -53,11 +53,8 @@ public class BthAcceptConnectionThread extends Thread {
             return;
         }
 
-        // The connection attempt succeeded. Perform work associated with
-        // the connection in a separate thread.
-        manageMyConnectedSocket(mmSocket);
+        this.manageMyConnectedSocket(mmSocket);
     }
-
 
     private void manageMyConnectedSocket(BluetoothSocket socket){
         this.callback.inititateCallback(socket);

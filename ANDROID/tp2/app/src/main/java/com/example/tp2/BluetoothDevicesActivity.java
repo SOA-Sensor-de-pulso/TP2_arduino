@@ -36,8 +36,6 @@ public class BluetoothDevicesActivity extends AppCompatActivity {
 
         this.bluetoothDevicesToString = new ArrayAdapter<String>(this, androidx.appcompat.R.layout.support_simple_spinner_dropdown_item);
 
-        //this.checkBluetooth();
-
         this.bluetoothDevicesListView.setOnItemClickListener(clickListener);
     }
 

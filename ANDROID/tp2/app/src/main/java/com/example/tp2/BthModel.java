@@ -35,7 +35,6 @@ public class BthModel implements ICallback {
             Arrays.asList("encender", "apagar")
     );
 
-
     BthModel(String macAddress) {
         this.device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(macAddress);
         this.bthConnectionThread = new BthAcceptConnectionThread(device, this);

@@ -101,7 +101,6 @@ public class MainActivity extends AppCompatActivity {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             someActivityResultLauncher.launch(enableBtIntent);
         }
-
     }
 
     private ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(

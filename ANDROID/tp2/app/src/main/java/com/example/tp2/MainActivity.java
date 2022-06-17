@@ -106,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                presenter.onButtonClick("apagar");
                 Intent intent = new Intent(this.getApplicationContext(),BluetoothDevicesActivity.class);
                 startActivity(intent);
             });

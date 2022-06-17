@@ -72,7 +72,9 @@ public class BthModel implements ICallback {
     public void sendCommandToDevice(String command) {
         //definir thread/asyncTask/Service para no bloquear activity principal
         //this.bthHandleConnectionThread.write(intToByteArray(commands.indexOf(command)));
-        byte[] info = {'0','\0'};
+        char commandNumber = (char) (((char)commands.indexOf(command)) + '0');
+
+        byte[] info = {(byte)commandNumber,'\0'};
         this.bthHandleConnectionThread.write(info);
         System.out.println("enviando comando " + commands.indexOf(command) + " a dispostivo...");
     }

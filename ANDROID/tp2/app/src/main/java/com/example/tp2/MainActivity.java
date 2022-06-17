@@ -34,11 +34,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         this.readValues = findViewById(R.id.textView3);
+        Intent intent = this.getIntent();
 
         this.checkBluetooth();
 
         try {
-            this.presenter = new Presenter(this, new BthModel(this.getMainLooper()));
+            this.presenter = new Presenter(this, new BthModel(intent.getStringExtra("direccionSeleccionada")));
         } catch (Exception e) {
             Log.e("app_arduino","Debe haber un unico dispositivo conectado");
             e.printStackTrace();
@@ -97,8 +98,6 @@ public class MainActivity extends AppCompatActivity {
     public void checkBluetooth() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!bluetoothAdapter.isEnabled()) {
-            //String[] permissions = {Manifest.permission.BLUETOOTH_CONNECT,BluetoothAdapter.ACTION_REQUEST_ENABLE};
-            //ActivityCompat.requestPermissions(this,permissions,1);
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             someActivityResultLauncher.launch(enableBtIntent);
         }

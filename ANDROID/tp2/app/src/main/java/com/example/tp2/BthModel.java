@@ -32,14 +32,8 @@ public class BthModel implements ICallback {
     private BluetoothSocket socket;
     private BthHandleConnectionThread bthHandleConnectionThread;
 
-    BthModel(Looper mainLooper) throws Exception {
-        //Object[] connectedDevices = BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray();
-        /*if (connectedDevices.size() != 1) {
-            throw new Exception();
-        }*/
-
-        //this.device = (BluetoothDevice) connectedDevices[1];
-        this.device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:21:06:BE:5A:36");
+    BthModel(String macAddress) {
+        this.device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(macAddress);
         this.bthConnectionThread = new BthAcceptConnectionThread(device, this);
     }
 
@@ -49,10 +43,6 @@ public class BthModel implements ICallback {
 
     public void tryConnection() {
         this.bthConnectionThread.start();
-        //BluetoothSocket socket = this.bthConnectionThread.getBluetoothSocket();
-
-        //this.bthHandleConnectionThread = new BthHandleConnectionThread(socket);
-        //this.bthHandleConnectionThread.start();
     }
 
     public void closeConnection() {
@@ -71,9 +61,7 @@ public class BthModel implements ICallback {
     }
 
     public void sendCommandToDevice(String command) {
-        //definir thread/asyncTask/Service para no bloquear activity principal
-        //this.bthHandleConnectionThread.write(intToByteArray(commands.indexOf(command)));
-        char commandNumber = (char) (commands.indexOf(command) + '0');
+        char commandNumber = Character.forDigit(commands.indexOf(command),10);
 
         byte[] info = {(byte)commandNumber,'\0'};
         this.bthHandleConnectionThread.write(info);

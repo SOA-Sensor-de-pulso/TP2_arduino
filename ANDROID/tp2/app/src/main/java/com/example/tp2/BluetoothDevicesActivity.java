@@ -52,9 +52,7 @@ public class BluetoothDevicesActivity extends AppCompatActivity {
         super.onResume();
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        if(this.checkBluetooth()) {
-            this.createListView();
-        }
+        this.checkBluetooth();
         registerReceiver(bthReceiver,filter);
     }
 
@@ -76,14 +74,15 @@ public class BluetoothDevicesActivity extends AppCompatActivity {
         }
     };
 
-    public boolean checkBluetooth() {
+    public void checkBluetooth() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (!bluetoothAdapter.isEnabled()) {
+        if (bluetoothAdapter.isEnabled()) {
+            this.createListView();
+        }
+        else{
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             someActivityResultLauncher.launch(enableBtIntent);
-            return false;
         }
-        return true;
     }
 
     private void createListView(){

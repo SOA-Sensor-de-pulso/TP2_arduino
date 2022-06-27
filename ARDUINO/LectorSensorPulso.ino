@@ -1,3 +1,7 @@
+#define USE_ARDUINO_INTERRUPTS true
+#include <PulseSensorPlayground.h>
+#include <SoftwareSerial.h>
+
 // Habilitacion de debug para la impresion por el puerto serial ...
 //----------------------------------------------
 #define SERIAL_DEBUG_ENABLED 1
@@ -33,9 +37,9 @@
 #define MIN_EVENTS 0
 #define MAX_EVENTS 8
 #define TIMEOUT_THRESHOLD 100
-#define FREQUENCY 400
+#define FREQUENCY 500
 #define SERIAL_BAUDS 9600
-#define MILLISECONDS_THROTTLE 50
+#define MILLISECONDS_THROTTLE 2000
 #define LED_APAGADO 255
 #define LED_ENCENDIDO 0
 
@@ -48,6 +52,15 @@ const int LED_GREEN_PIN = 7;
 
 const int BUZZER_PIN = 2;
 
+// Para bluetooth: 
+// pines de transmision y recepcion
+// variable para comando BOTON_PRESIONADO
+// cadena de caracteres que va a contener el valor del sensor de pulso
+const int BTH_RX_PIN = 10;
+const int BTH_TX_PIN = 11;
+const int BASE = 10;
+bool esta_encendido_bth;
+char buffer_bth[6]; //4 digitos + \0
 // Para el botón: pin al que se conecta, y estado
 const int PIN_BOTON = 3;
 volatile bool esta_encendido;
@@ -56,8 +69,9 @@ int valor_pulso_anterior;
 
 bool alarma;
 
-const int POTENCIOMETER = 1;
-
+const int PULSE_SENSOR_PIN = 0;
+PulseSensorPlayground pulseSensor;
+int valor_pulso_actual;
 // El rango normal de pulsaciones de un corazon en reposo
 const int MIN_HEALTH_PPM = 60;
 const int MAX_HEALTH_PPM = 100;
@@ -81,9 +95,16 @@ const int LIMIT_PULSE = 200;
 const int MIN_TEST_PPM = -10;
 const int MAX_TEST_PPM = 250;
 
-// Rango para mapeo de valores potenciometro
-const int MIN_ANALOG_VALUE = 0;
-const int MAX_ANALOG_VALUE = 1023;
+// Rango para mapeo de valores sensor de pulso
+const int PULSE_THRESHOLD = 520;
+//---------------------------------------------------------
+
+/*
+Inicializacion de softwareSerial para sensor bluetooth
+*/
+SoftwareSerial sensorBluetooth = SoftwareSerial(BTH_RX_PIN,BTH_TX_PIN);
+enum comandos_bth {ENCENDER, APAGAR} comando_bth;
+
 //---------------------------------------------------------
 
 /*
@@ -91,8 +112,8 @@ obtencion de valor crudo desde el sensor de pulso
 */
 int getHeartValue()
 {
-  int rawValue = analogRead(POTENCIOMETER);
-  return map(rawValue, MIN_ANALOG_VALUE, MAX_ANALOG_VALUE, MIN_TEST_PPM, MAX_TEST_PPM);
+  int myBPM = pulseSensor.getBeatsPerMinute();
+  return myBPM;
 }
 
 /*
@@ -224,6 +245,7 @@ void pulso_normal()
   turnOnGreenLED();
   noTone(BUZZER_PIN);
 
+  enviarBluetooth();
   current_state = LECTURA_NORMAL;
 }
 
@@ -235,6 +257,7 @@ void pulso_precaucion()
   turnOnYellowLED();
   noTone(BUZZER_PIN);
 
+  enviarBluetooth();
   alarma = true;
   current_state = ALARMA;
 }
@@ -247,6 +270,7 @@ void pulso_peligroso()
   turnOnRedLED();
   tone(BUZZER_PIN, FREQUENCY);
   
+  enviarBluetooth();
   alarma = true;
   current_state = ALARMA;
 }
@@ -259,6 +283,7 @@ void pulso_incorrecto()
   turnOnBlueLED();
   tone(BUZZER_PIN, FREQUENCY);
   
+  enviarBluetooth();
   alarma = true;
   current_state = ALARMA;
 }
@@ -266,7 +291,8 @@ void pulso_incorrecto()
 /*
 accion que permite volver a hacer lecturas del sensor de pulsos.
 */
-void continuar() {
+void continuar()
+{
     alarma = false;
     current_state = LECTURA_NORMAL;
 }
@@ -281,7 +307,48 @@ void none()
 
 //---------------------------------------------------------
 
+void enviarBluetooth()
+{
+  itoa(valor_pulso_actual, buffer_bth, BASE);
+
+  int largo = strlen(buffer_bth);
+  //buffer_bth[largo] = '\n';
+  buffer_bth[largo+1] = '\0';
+
+  Serial.print("largo: ");
+  Serial.println(largo);
+  Serial.print("valor: ");
+  Serial.println(buffer_bth);
+  sensorBluetooth.write(' ');
+  Serial.println(sensorBluetooth.write(buffer_bth));
+  sensorBluetooth.flush();
+}
+
 //---------------------------------------------------------
+
+bool verificar_estado_sensor_bluetooth()
+{
+
+  if(sensorBluetooth.available())
+  {
+    char c = sensorBluetooth.read();
+    while(sensorBluetooth.available())
+    {
+      sensorBluetooth.read();
+    }
+    comando_bth = c - '0';
+
+    switch(comando_bth)
+    {
+      case ENCENDER:
+      case APAGAR:
+        presionar_boton();
+    }
+  }
+  
+
+  return false;
+}
 
 /*
 Se encarga de verificar el estado del boton.
@@ -289,18 +356,23 @@ Si se presiona, se enciende el dispositivo y se comienza el monitoreo.
 Si se vuelve a presionar durante el monitoreo, se finaliza el mismo.
 Si no se presiona, se mantiene en el estado STAND_BY.
 */
-bool verificar_estado_sensor_boton() {    
-    if(esta_encendido != estaba_encendido) {
+bool verificar_estado_sensor_boton()
+{    
+    if(esta_encendido != estaba_encendido)
+    {
       estaba_encendido = esta_encendido;
       
-      if(esta_encendido) {
+      if(esta_encendido)
+      {
           new_event = ACTIVAR;
       }
-      else{
+      else
+      {
           new_event = DESACTIVAR;
       }
       return true;
-    } else if(!esta_encendido && !estaba_encendido) {
+    } else if(!esta_encendido && !estaba_encendido)
+    {
       new_event = ESPERAR;
       return true;
     }
@@ -312,8 +384,9 @@ bool verificar_estado_sensor_boton() {
 se encarga de generar eventos en funcion del valor que se lea
 del sensor de pulsos
 */
-bool verificar_estado_sensor_pulso() {
-    int valor_pulso_actual = getHeartValue();
+bool verificar_estado_sensor_pulso()
+{
+    valor_pulso_actual = getHeartValue();
     // no alterar el orden de llamados de función sin revisar las 
     // definiciones de is(Warning|Healthy|Dangerous)Value
     if ( isHealthyValue(valor_pulso_actual) )
@@ -339,8 +412,8 @@ Se encarga de verificar que si no se genera ningun evento,
 se genere un time_out, para retornar al estado LECTURA_NORMAL,
 para volver a hacer lecturas al sensor.
 */
-bool verificar_alarma() {
-
+bool verificar_alarma()
+{
     if(alarma) {
         new_event = TIME_OUT;
         return true;
@@ -355,7 +428,7 @@ se encarga de evaluar los diferentes sensores para obtener un evento
 void get_new_event()
 {
 
-  if(verificar_estado_sensor_boton() || verificar_alarma() || verificar_estado_sensor_pulso()) {
+  if(verificar_estado_sensor_bluetooth() || verificar_estado_sensor_boton() || verificar_alarma() || verificar_estado_sensor_pulso()) {
     return;
   }
 }
@@ -367,10 +440,21 @@ void setup()
   pinMode(LED_BLUE_PIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(PIN_BOTON, INPUT_PULLUP);
-  
+  pinMode(BTH_RX_PIN, INPUT);
+  pinMode(BTH_TX_PIN, OUTPUT);
+
   attachInterrupt(digitalPinToInterrupt(PIN_BOTON), presionar_boton, FALLING);
+
+  pulseSensor.analogInput(PULSE_SENSOR_PIN);
+  pulseSensor.setThreshold(PULSE_THRESHOLD);
+  if(pulseSensor.begin())
+  {
+    Serial.println("Se inició el sensor de pulso!");
+  }
   
   Serial.begin(SERIAL_BAUDS);
+  sensorBluetooth.begin(SERIAL_BAUDS);
+  esta_encendido_bth = false;
 
   esta_encendido = false;
   estaba_encendido = false;
@@ -383,7 +467,8 @@ void setup()
 
 void loop()
 {
-  if ( ( millis() % MILLISECONDS_THROTTLE) != 0 ) {
+  if ( ( millis() % MILLISECONDS_THROTTLE) != 0 )
+  {
     // de esta forma no es afectado por el timeout al ocurrir 
     // el overflow de unsigned long luego de aprox 50 días
     return;

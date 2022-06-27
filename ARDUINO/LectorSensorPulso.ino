@@ -39,7 +39,7 @@
 #define TIMEOUT_THRESHOLD 100
 #define FREQUENCY 500
 #define SERIAL_BAUDS 9600
-#define MILLISECONDS_THROTTLE 3000
+#define MILLISECONDS_THROTTLE 2000
 #define LED_APAGADO 255
 #define LED_ENCENDIDO 0
 
@@ -69,7 +69,7 @@ int valor_pulso_anterior;
 
 bool alarma;
 
-const int PULSE_SENSOR_PIN = 1;
+const int PULSE_SENSOR_PIN = 0;
 PulseSensorPlayground pulseSensor;
 int valor_pulso_actual;
 // El rango normal de pulsaciones de un corazon en reposo
@@ -312,14 +312,16 @@ void enviarBluetooth()
   itoa(valor_pulso_actual, buffer_bth, BASE);
 
   int largo = strlen(buffer_bth);
-  buffer_bth[largo] = '\n';
+  //buffer_bth[largo] = '\n';
   buffer_bth[largo+1] = '\0';
 
   Serial.print("largo: ");
   Serial.println(largo);
   Serial.print("valor: ");
   Serial.println(buffer_bth);
+  sensorBluetooth.write(' ');
   Serial.println(sensorBluetooth.write(buffer_bth));
+  sensorBluetooth.flush();
 }
 
 //---------------------------------------------------------

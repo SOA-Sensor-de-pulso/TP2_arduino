@@ -52,7 +52,11 @@ public class BthHandleConnectionThread extends Thread{
                 numBytes = mmInStream.read(mmBuffer);
 
                 this.callback.readCallback(mmBuffer);
-
+                mmBuffer[0] = '\0';
+                mmBuffer[1] = '\0';
+                mmBuffer[2] = '\0';
+                mmBuffer[3] = '\0';
+                mmBuffer[4] = '\0';
                 // Send the obtained bytes to the UI activity.
                 //Message readMsg = handler.obtainMessage(
                 //        MessageConstants.MESSAGE_READ, numBytes, -1,
